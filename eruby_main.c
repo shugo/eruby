@@ -1,5 +1,5 @@
 /*
- * $Id: eruby_main.c,v 1.37 2003/12/23 15:10:54 shugo Exp $
+ * $Id$
  * Copyright (C) 2000  ZetaBITS, Inc.
  * Copyright (C) 2000  Information-technology Promotion Agency, Japan
  * Copyright (C) 2000  Shugo Maeda <shugo@modruby.net>
@@ -540,7 +540,8 @@ static void proc_args(int argc, char **argv)
 	    eruby_filename = "-";
 	}
 	else {
-	    eruby_filename = argv[option_index];
+	    eruby_filename = argv[option_index++];
+            ruby_set_argv(argc - option_index, argv + option_index);
 	}
     }
 }
@@ -570,6 +571,7 @@ static void run()
     if (eruby_mode == MODE_FILTER && (RTEST(ruby_debug) || RTEST(ruby_verbose))) {
 	print_generated_code(stderr, code, 0);
     }
+    rb_exec_end_proc();
 #if RUBY_VERSION_CODE >= 180
     out = RSTRING(rb_stdout)->ptr;
     nout = RSTRING(rb_stdout)->len;

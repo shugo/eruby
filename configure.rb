@@ -333,7 +333,7 @@ $LIBRUBY = CONFIG["LIBRUBY"]
 $LIBRUBY_A = CONFIG["LIBRUBY_A"]
 $RUBY_SO_NAME = CONFIG["RUBY_SO_NAME"]
 
-case PLATFORM
+case RUBY_PLATFORM
 when /-aix/
   if $RUBY_SHARED
     $LIBRUBYARG = "-Wl,$(libdir)/" + CONFIG["LIBRUBY_SO"]
@@ -431,7 +431,7 @@ AC_MSG_CHECKING("whether enable shared")
 $ENABLE_SHARED = false
 AC_ENABLE("shared") { |enableval|
   if enableval == "yes"
-    if PLATFORM =~ /-mswin32/
+    if /-mswin32/ =~ RUBY_PLATFORM
       AC_MSG_ERROR("can't enable shared on mswin32")
     end
     $ENABLE_SHARED = true
@@ -449,7 +449,7 @@ $LIBERUBY_ALIASES = "liberuby.#{CONFIG['DLEXT']}"
 if $ENABLE_SHARED
   $LIBERUBY = "${LIBERUBY_SO}"
   $LIBERUBYARG = "-L. -leruby"
-  case PLATFORM
+  case RUBY_PLATFORM
   when /-sunos4/
     $LIBERUBY_ALIASES = "liberuby.so.$(MAJOR).$(MINOR) liberuby.so"
   when /-linux/
@@ -457,7 +457,7 @@ if $ENABLE_SHARED
     $LIBERUBY_ALIASES = "liberuby.so.$(MAJOR).$(MINOR) liberuby.so"
   when /-(freebsd|netbsd)/
     $LIBERUBY_SO = "liberuby.so.$(MAJOR).$(MINOR)"
-    if PLATFORM =~ /elf/ || PLATFORM =~ /-freebsd[3-9]/
+    if /elf/ =~ RUBY_PLATFORM || /-freebsd[3-9]/ =~ RUBY_PLATFORM
       $LIBERUBY_SO = "liberuby.so.$(MAJOR_MINOR)"
       $LIBERUBY_ALIASES = "liberuby.so"
     else
@@ -493,7 +493,7 @@ EOIF
   end
 end
 
-if PLATFORM =~ /-mswin32/
+if /-mswin32/ =~ RUBY_PLATFORM
   $AR = "lib"
   $AROPT = "/out:$@"
   $LIBERUBY_A = "liberuby.lib"
@@ -519,7 +519,7 @@ AC_SUBST("LIBERUBY_ALIASES")
 AC_SUBST("AROPT")
 
 $EXT_DLDFLAGS = CONFIG["DLDFLAGS"]
-if $RUBY_SHARED || RUBY_PLATFORM =~ /mswin32/
+if $RUBY_SHARED || /mswin32/ =~ RUBY_PLATFORM
   $EXT_LIBRUBYARG = "$(LIBRUBYARG)"
 else
   $EXT_LIBRUBYARG = ""

@@ -1,3 +1,19 @@
+Tue Mar  9 14:16:06 2004  Shugo Maeda <shugo@modruby.net>
+
+	* Makefile.in: use $(RUBY) to execute bin2c.
+
+Tue Mar  9 14:08:19 2004  MOROHOSHI Akihiko <moro@remus.dti.ne.jp>
+
+	* eruby_main.c (proc_args): pass ARGV to scripts.
+
+Wed Feb 25 13:37:07 2004  U.Nakamura <usa@garbagecollect.jp>
+
+	* autoconf.rb: should use RUBY_PLATFORM instead of PLATFORM.
+
+Wed Dec 24 00:45:29 2003  Shugo Maeda <shugo@modruby.net>
+
+	* eruby_main.c (run): call rb_exec_end_proc().
+
 Wed Dec 24 00:11:19 2003  Shugo Maeda <shugo@modruby.net>
 
 	* version 1.0.5 released.

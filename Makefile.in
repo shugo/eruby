@@ -160,7 +160,7 @@ $(MANPAGE): @VPATH@eruby.rd
 	$(RM) $@~
 
 eruby_logo.c: @VPATH@eruby_logo.png
-	$(srcdir)/bin2c $(srcdir)/eruby_logo.png
+	$(RUBY) $(srcdir)/bin2c $(srcdir)/eruby_logo.png
 eruby_lib.@OBJEXT@: @VPATH@eruby_lib.c @VPATH@eruby.h config.h
 eruby_logo.@OBJEXT@: @VPATH@eruby_logo.c @VPATH@eruby_logo.h
 eruby_main.@OBJEXT@: @VPATH@eruby_main.c @VPATH@eruby.h @VPATH@eruby_logo.h
