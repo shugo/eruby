@@ -705,6 +705,7 @@ void eruby_init()
     rb_define_virtual_variable("$NOHEADER", noheader_getter, noheader_setter);
 
     mERuby = rb_define_module("ERuby");
+    rb_define_const(mERuby, "VERSION", rb_str_new2(ERUBY_VERSION));
     rb_define_singleton_method(mERuby, "noheader", eruby_get_noheader, 0);
     rb_define_singleton_method(mERuby, "noheader=", eruby_set_noheader, 1);
     rb_define_singleton_method(mERuby, "charset", eruby_get_charset, 0);
