@@ -1,0 +1,16 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<html>
+<head>
+<title>eruby test</title>
+</head>
+<body>
+<h1>eruby test</h1>
+<p>
+<% print "hello world" %>
+current time: <%= Time.now %>
+<%# this is a comment line. %>
+% print "this is one liner.\n"
+% ERuby.import("foo.rhtml")
+</p>
+</body>
+</html>

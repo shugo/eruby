@@ -1,0 +1,26 @@
+#!/usr/bin/env ruby
+
+unless filename = ARGV.shift
+  puts "usage: bin2c filename"
+end
+
+basename = File.basename(filename)
+basename = /^[^.]*/.match(basename)[0]
+
+open(basename + ".c", "w") do |output|
+  output.printf("#include \"%s.h\"\n", basename)
+  output.printf("int %s_size    = %s;\n", basename, File.size(filename))
+  output.printf("char %s_data[] = {\n", basename)
+  open(filename) do |input|
+    i = 0
+    input.each_byte do |c|
+      if i > 0
+	output.print(",")
+	output.print("\n") if i % 15 == 0
+      end
+      output.printf("0x%02x", c)
+      i += 1
+    end
+    output.print(" };\n")
+  end
+end

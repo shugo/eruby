@@ -1,0 +1,64 @@
+=begin
+
+= README for eRuby
+
+== What's eRuby?
+
+eRuby interprets a Ruby code embedded text file. For example, eRuby
+enables you to embed a Ruby code to a HTML file.
+
+== Required environment
+
+* Ruby version 1.6.x or later.
+
+== Installation
+
+(1) Type `./configure.rb' to create Makefile.
+    (Type `./configure.rb --help' to get a help message.)
+
+(2) Type `make' to compile eRuby.
+
+(3) Type `make install' to install all files.
+
+== Syntax
+
+A Ruby block starts with `<%' and ends with `%>'. eRuby replaces
+the block with its output.
+
+  $ cat foo
+  Hello, <% print "World!" %>
+  $ eruby foo
+  Hello, World!
+
+If `<%' is followed by `=', eRuby replaces the block with a value
+of the block.
+
+  $ cat bar
+  Hello, <%= "World!" %>
+  $ eruby bar
+  Hello, World!
+
+If `<%' is followed by `#', the block is ignored as a comment.
+
+  $ cat baz
+  Hello,<%# this is
+  a comment %> World!
+  $ eruby baz
+  Hello, World!
+
+If a line starts with '%', eRuby evaluates the line as a Ruby
+program and replaces the line with its output.
+
+  $ cat quux
+  % x = 1 + 1
+  1 + 1 = <%= x %>
+  $ eruby quux
+  1 + 1 = 2
+
+=end
+
+Local variables:
+mode: indented-text
+mode: auto-fill
+fill-column: 70
+End:

@@ -1,0 +1,167 @@
+# Generated automatically by configure.rb.
+
+srcdir = @srcdir@
+topdir = @topdir@
+hdrdir = @hdrdir@
+VPATH = $(srcdir)
+
+arch = @arch@
+sitearch = @sitearch@
+ruby_version = @ruby_version@
+
+DESTDIR = @drive@
+
+prefix = $(DESTDIR)@prefix@
+exec_prefix = @exec_prefix@
+bindir = @bindir@
+datadir = @datadir@
+libdir = @libdir@
+rubylibdir = @rubylibdir@
+archdir = @archdir@
+sitedir = @sitedir@
+sitelibdir = @sitelibdir@
+sitearchdir = @sitearchdir@
+includedir = @includedir@
+mandir = @mandir@
+
+CC = @CC@
+AR = @AR@
+LD = @LD@
+RANLIB = @RANLIB@
+RUBY = $(RUBY_INSTALL_NAME)
+
+CFLAGS = @CFLAGS@ -I. -I$(hdrdir)
+LDFLAGS = @LDFLAGS@
+LIBS = @LIBS@
+XLDFLAGS = @XLDFLAGS@
+DLDFLAGS = @DLDFLAGS@
+LDSHARED = @LDSHARED@
+EXT_DLDFLAGS = @EXT_DLDFLAGS@
+INSTALL_PROGRAM = $(RUBY) -r ftools -e 'File.install ARGV[0], ARGV[1], 0755, true'
+INSTALL_DLLIB = $(RUBY) -r ftools -e 'File.install ARGV[0], ARGV[1], 0555, true'
+INSTALL_DATA = $(RUBY) -r ftools -e 'File.install ARGV[0], ARGV[1], 0644, true'
+INSTALL_DIR = $(RUBY) -r ftools -e 'File.makedirs(*ARGV)'
+
+RUBY_INSTALL_NAME = @RUBY_INSTALL_NAME@
+LIBRUBYARG = @LIBRUBYARG@
+LIBRUBYARG_SHARED = @LIBRUBYARG_SHARED@
+LIBRUBYARG_STATIC = @LIBRUBYARG_STATIC@
+LIBRUBY = @LIBRUBY@
+LIBRUBY_A = @LIBRUBY_A@
+RUBY_SO_NAME = @RUBY_SO_NAME@
+EXT_LIBRUBYARG = @EXT_LIBRUBYARG@
+
+RM = $(RUBY) -e "ARGV.each {|f|File.unlink(f) rescue Errno}"
+
+DEFFILE = @DEFFILE@
+
+ERUBY = eruby@EXEEXT@
+DLLIB = eruby.@DLEXT@
+MANPAGE = eruby.1
+
+MAJOR = @MAJOR@
+MINOR = @MINOR@
+TEENY = @TEENY@
+MAJOR_MINOR = @MAJOR_MINOR@
+VERSION = $(MAJOR).$(MINOR).$(TEENY)
+TAG = release_$(MAJOR)_$(MINOR)_$(TEENY)
+
+LIBERUBY_A = @LIBERUBY_A@
+LIBERUBY_SO = @LIBERUBY_SO@
+LIBERUBY_ALIASES = @LIBERUBY_ALIASES@
+LIBERUBY = @LIBERUBY@
+LIBERUBYARG = @LIBERUBYARG@
+.SUFFIXES: .@OBJEXT@ .c .rd .1
+
+LIBERUBY_OBJS = eruby_lib.@OBJEXT@
+OBJS = eruby_logo.@OBJEXT@ eruby_main.@OBJEXT@
+EXT_OBJS = eruby_ext.@OBJEXT@
+
+@VPATH@.c.@OBJEXT@:
+	$(CC) $(CFLAGS) -c $<
+
+all: $(LIBERUBY_A) $(ERUBY) $(DLLIB) $(MANPAGE) Makefile
+
+install: install-main
+	@-$(INSTALL_DIR) $(archdir)
+	@-$(INSTALL_DLLIB) $(DLLIB) $(archdir)
+
+site-install: install-main
+	@-$(INSTALL_DIR) $(sitearchdir)
+	@-$(INSTALL_DLLIB) $(DLLIB) $(sitearchdir)
+
+install-main: all
+	@-$(INSTALL_DIR) $(bindir)
+	@-$(INSTALL_DIR) $(libdir)
+	@-$(INSTALL_DIR) $(includedir)
+	@-$(INSTALL_DIR) $(mandir)/man1
+	@-$(INSTALL_PROGRAM) $(ERUBY) $(bindir)/$(ERUBY)
+	@-if [ -f $(LIBERUBY_SO) ]; then \
+		$(INSTALL_DATA) $(LIBERUBY_SO) $(libdir)/$(LIBERUBY_SO); \
+		cd $(libdir); \
+		$(RUBY) -e 'ARGV.each{|link| File.delete link \
+			if File.exist? link; \
+			File.symlink "$(LIBERUBY_SO)", link}' \
+			$(LIBERUBY_ALIASES); \
+	fi
+	@-$(INSTALL_DATA) $(LIBERUBY_A) $(libdir)/$(LIBERUBY_A)
+	@-$(INSTALL_DATA) $(srcdir)/eruby.h $(includedir)/eruby.h
+	@-$(INSTALL_DATA) $(srcdir)/$(MANPAGE) $(mandir)/man1/$(MANPAGE)
+
+clean:
+	$(RM) $(ERUBY)
+	$(RM) $(DLLIB)
+	$(RM) $(LIBERUBY_A)
+	$(RM) $(LIBERUBY_SO)
+	$(RM) $(LIBERUBY_ALIASES)
+	$(RM) $(LIBERUBY_OBJS)
+	$(RM) $(OBJS)
+	$(RM) $(EXT_OBJS)
+	$(RM) $(DEFFILE)
+	$(RM) eruby.imp
+
+distclean: clean
+	$(RM) config.h
+	$(RM) Makefile
+	$(RM) *~
+
+tag:
+	cvs tag $(TAG)
+
+force_tag:
+	cvs tag -F $(TAG)
+
+dist:
+	cvs export -r $(TAG) -d eruby-$(VERSION) eruby
+	tar zcf ../eruby-$(VERSION).tar.gz eruby-$(VERSION)
+	rm -rf eruby-$(VERSION)
+
+$(LIBERUBY_A): $(LIBERUBY_OBJS)
+	$(AR) @AROPT@ $(LIBERUBY_OBJS)
+	@-$(RANLIB) $@ 2> /dev/null || true
+
+$(LIBERUBY_SO): $(LIBERUBY_OBJS)
+	$(LDSHARED) $(DLDFLAGS) $(XLDFLAGS) $(LIBERUBY_OBJS) \
+		$(EXT_LIBRUBYARG) $(LIBS) -o $@
+	@-$(RUBY) -e 'ARGV.each{|link| File.delete link if File.exist? link; \
+		File.symlink "$(LIBERUBY_SO)", link}' $(LIBERUBY_ALIASES)
+
+$(ERUBY): $(OBJS) $(LIBERUBY)
+	@MKERUBY@
+
+$(DLLIB): $(EXT_OBJS) $(LIBERUBY)
+	@MKDLLIB@
+
+$(MANPAGE): @VPATH@eruby.rd
+
+@VPATH@.rd@VPATH@.1:
+	$(RUBY) -S rd2 -r rd/rd2man-lib -o $* $<
+	$(RUBY) -i~ -ne 'print if ~/.+/' $@
+	$(RM) $@~
+
+eruby_logo.c: @VPATH@eruby_logo.png
+	$(srcdir)/bin2c $(srcdir)/eruby_logo.png
+eruby_lib.@OBJEXT@: @VPATH@eruby_lib.c @VPATH@eruby.h config.h
+eruby_logo.@OBJEXT@: @VPATH@eruby_logo.c @VPATH@eruby_logo.h
+eruby_main.@OBJEXT@: @VPATH@eruby_main.c @VPATH@eruby.h @VPATH@eruby_logo.h
+eruby_ext.@OBJEXT@: @VPATH@eruby_ext.c @VPATH@eruby.h

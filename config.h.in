@@ -1,0 +1,4 @@
+/* Generated automatically by configure.rb. */
+
+/* default charset */
+#undef ERUBY_DEFAULT_CHARSET

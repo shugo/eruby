@@ -1,0 +1,65 @@
+=begin
+
+= eRubyのREADME
+
+== eRubyとは?
+
+eRubyはRubyのコードが埋めこまれたテキストファイルを解釈実行します。
+たとえば、eRubyを使えば、HTMLにRubyのコードをHTMLファイルに埋めこむ
+ことができます。
+
+== 要求される環境
+
+* Ruby version 1.6.x 以降
+
+== インストール
+
+(1) `./configure.rb'とタイプし、Makefileを作成してください。
+    (へルプメッセージを得るには`./configure.rb --help'とタイプしてください。)
+
+(2) `make'とタイプし、eRubyをコンパイルしてください。
+
+(3) `make install'とタイプし、ファイルをインストールしてください。
+
+== 文法
+
+eRubyのブロックは`<%'で始まり、`%>'で終ります。eRubyはブロックをその
+ブロックの出力結果に置き換えます。
+
+  $ cat foo
+  こんにちは、<% print "みなさん!" %>
+  $ eruby foo
+  こんにちは、みなさん!
+
+`<%'の次に`='が来る場合、eRubyはブロックをそのブロックを評価した値に
+置き換えます。
+
+  $ cat bar
+  こんにちは、<%= "みなさん!" %>
+  $ eruby bar
+  こんにちは、みなさん!
+
+`<%'の次に`#'が来る場合、ブロックはコメントとして無視されます。
+
+  $ cat baz
+  こんにちは、<%# これは
+  コメント %>みなさん!
+  $ eruby baz
+  こんにちは、みなさん!
+
+`%'で始まる行は、Rubyプログラムとして評価されます。eRubyはその行を出
+力結果で置き換えます。
+
+  $ cat quux
+  % x = 1 + 1
+  1 + 1 = <%= x %>
+  $ eruby quux
+  1 + 1 = 2
+
+=end
+
+Local variables:
+mode: indented-text
+mode: auto-fill
+fill-column: 70
+End:
