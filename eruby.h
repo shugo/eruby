@@ -1,5 +1,5 @@
 /*
- * $Id: eruby.h,v 1.31 2003/12/23 15:11:54 shugo Exp $
+ * $Id$
  * Copyright (C) 2000  ZetaBITS, Inc.
  * Copyright (C) 2000  Information-technology Promotion Agency, Japan
  */
@@ -7,7 +7,7 @@
 #ifndef ERUBY_H
 #define ERUBY_H
 
-#define ERUBY_VERSION "1.0.5"
+#define ERUBY_VERSION "1.0.6"
 
 #define ERUBY_MIME_TYPE "application/x-httpd-eruby"
 
@@ -28,6 +28,7 @@ enum eruby_mode {
 extern char *eruby_filename;
 extern int eruby_mode;
 extern int eruby_noheader;
+extern int eruby_sync;
 extern VALUE eruby_charset;
 extern VALUE eruby_default_charset;
 #define ERUBY_CHARSET RSTRING(eruby_charset)->ptr
@@ -35,6 +36,7 @@ extern VALUE eruby_default_charset;
 const char *eruby_version();
 int eruby_parse_options(int argc, char **argv, int *optind);
 VALUE eruby_compiler_new();
+VALUE eruby_compiler_set_sourcefile(VALUE self, VALUE filename);
 VALUE eruby_compiler_compile_file(VALUE self, VALUE file);
 VALUE eruby_compiler_compile_string(VALUE self, VALUE s);
 VALUE eruby_load(char *filename, int wrap, int *state);

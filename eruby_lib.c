@@ -1,5 +1,5 @@
 /*
- * $Id: eruby_lib.c,v 1.19 2003/07/29 03:42:56 shugo Exp $
+ * $Id$
  * Copyright (C) 2000  ZetaBITS, Inc.
  * Copyright (C) 2000  Information-technology Promotion Agency, Japan
  * Copyright (C) 2000  Shugo Maeda <shugo@modruby.net>
@@ -48,6 +48,7 @@ static VALUE eERubyCompileError;
 char *eruby_filename = NULL;
 int eruby_mode = MODE_UNKNOWN;
 int eruby_noheader = 0;
+int eruby_sync = 0;
 VALUE eruby_charset;
 VALUE eruby_default_charset;
 
@@ -82,6 +83,7 @@ usage: %s [switches] [inputfile]\n\n\
 			  n: NPH-CGI mode\n\
   -C [charset]		specifies charset parameter for Content-Type\n\
   -n, --noheader	disables CGI header output\n\
+  -s, --sync		sync output\n\
   -v, --verbose		enables verbose mode\n\
   --version		print version information and exit\n\
 \n", progname);
@@ -173,6 +175,10 @@ int eruby_parse_options(int argc, char **argv, int *optind)
 	    eruby_noheader = 1;
 	    s++;
 	    goto again;
+	case 's':
+	    eruby_sync = 1;
+	    s++;
+	    goto again;
 	case '\0':
 	    break;
 	case 'h':
@@ -190,6 +196,12 @@ int eruby_parse_options(int argc, char **argv, int *optind)
 		     && (s[8] == '\0' || isspace(s[8]))) {
 		eruby_noheader = 1;
 		s += 8;
+		goto again;
+	    }
+	    else if (strncmp(s, "sync", 4) == 0
+		     && (s[4] == '\0' || isspace(s[4]))) {
+		eruby_sync = 1;
+		s += 4;
 		goto again;
 	    }
 	    else if (strncmp(s, "version", 7) == 0
@@ -630,78 +642,6 @@ VALUE eruby_compiler_compile_file(VALUE self, VALUE file)
     compiler->buf_len = 0;
     compiler->sourceline = 0;
     return eruby_compile(compiler);
-}
-
-static VALUE file_open(VALUE filename)
-{
-    return rb_file_open((char *) filename, "r");
-}
-
-typedef struct compile_arg {
-    VALUE compiler;
-    VALUE input;
-} compile_arg_t;
-
-static VALUE eruby_compile_file(VALUE arg)
-{
-    return eruby_compiler_compile_file(((compile_arg_t *) arg)->compiler,
-				       ((compile_arg_t *) arg)->input);
-}
-
-typedef struct eval_arg {
-    VALUE src;
-    VALUE filename;
-} eval_arg_t;
-
-static VALUE eval_string(VALUE arg)
-{
-    return rb_funcall(ruby_top_self, rb_intern("eval"), 3,
-		      ((eval_arg_t *) arg)->src,
-		      Qnil,
-		      ((eval_arg_t *) arg)->filename);
-}
-
-VALUE eruby_load(char *filename, int wrap, int *state)
-{
-    VALUE compiler;
-    VALUE code;
-    VALUE f;
-    VALUE vfilename = rb_str_new2(filename);
-    compile_arg_t carg;
-    eval_arg_t earg;
-    int status;
-
-    if (strcmp(filename, "-") == 0) {
-	f = rb_stdin;
-    }
-    else {
-	f = rb_protect(file_open, (VALUE) filename, &status);
-	if (status) {
-	    if (state) *state = status;
-	    return Qnil;
-	}
-    }
-    compiler = eruby_compiler_new();
-    eruby_compiler_set_sourcefile(compiler, vfilename);
-    carg.compiler = compiler;
-    carg.input = f;
-    code = rb_protect(eruby_compile_file, (VALUE) &carg, &status);
-    if (status)	{
-	if (state) *state = status;
-	return Qnil;
-    }
-    if (wrap) {
-	rb_eval_string_wrap(STR2CSTR(code), &status);
-    }
-    else {
-	earg.src = code;
-	earg.filename = vfilename;
-	rb_protect(eval_string, (VALUE) &earg, &status);
-    }
-    if (state) *state = status;
-    if (f != rb_stdin)
-	rb_io_close(f);
-    return code;
 }
 
 static VALUE noheader_getter()

@@ -42,6 +42,7 @@ EXTERN VALUE rb_stdout;
 EXTERN VALUE rb_defout;
 #endif
 EXTERN VALUE rb_load_path;
+EXTERN VALUE ruby_top_self;
 
 /* copied from eval.c */
 #define TAG_RETURN	0x1
@@ -453,18 +454,6 @@ static void init()
 #endif
     if (eruby_mode == MODE_CGI || eruby_mode == MODE_NPHCGI)
 	rb_set_safe_level(1);
-
-#if RUBY_VERSION_CODE >= 180
-    rb_io_binmode(rb_stdout);	/* for mswin32 */
-    rb_stdout = rb_str_new("", 0);
-    rb_define_singleton_method(rb_stdout, "write", defout_write, 1);
-    rb_define_singleton_method(rb_stdout, "cancel", defout_cancel, 0);
-#else
-    rb_defout = rb_str_new("", 0);
-    rb_io_binmode(rb_stdout);	/* for mswin32 */
-    rb_define_singleton_method(rb_defout, "write", defout_write, 1);
-    rb_define_singleton_method(rb_defout, "cancel", defout_cancel, 0);
-#endif
     eruby_init();
 }
 
@@ -546,17 +535,8 @@ static void proc_args(int argc, char **argv)
     }
 }
 
-static void run()
+static void error(int state, VALUE code)
 {
-    VALUE stack_start;
-    VALUE code;
-    int state;
-    char *out;
-    int nout;
-    void Init_stack _((VALUE*));
-
-    Init_stack(&stack_start);
-    code = eruby_load(eruby_filename, 0, &state);
     if (state && !rb_obj_is_kind_of(ruby_errinfo, rb_eSystemExit)) {
 	if (RTEST(ruby_debug) &&
 	    (eruby_mode == MODE_CGI || eruby_mode == MODE_NPHCGI)) {
@@ -568,10 +548,43 @@ static void run()
 	    eruby_exit(1);
 	}
     }
-    if (eruby_mode == MODE_FILTER && (RTEST(ruby_debug) || RTEST(ruby_verbose))) {
-	print_generated_code(stderr, code, 0);
+}
+
+static void print_headers(int length)
+{
+    if (!eruby_noheader &&
+	(eruby_mode == MODE_CGI || eruby_mode == MODE_NPHCGI)) {
+	if (eruby_mode == MODE_NPHCGI)
+	    print_http_headers();
+
+	printf("Content-Type: text/html; charset=%s\r\n", ERUBY_CHARSET);
+	if (length >= 0) {
+	    printf("Content-Length: %d\r\n", length);
+	}
+	printf("\r\n");
     }
-    rb_exec_end_proc();
+}
+
+static void replace_stdout()
+{
+#if RUBY_VERSION_CODE >= 180
+    rb_io_binmode(rb_stdout);	/* for mswin32 */
+    rb_stdout = rb_str_new("", 0);
+    rb_define_singleton_method(rb_stdout, "write", defout_write, 1);
+    rb_define_singleton_method(rb_stdout, "cancel", defout_cancel, 0);
+#else
+    rb_defout = rb_str_new("", 0);
+    rb_io_binmode(rb_stdout);	/* for mswin32 */
+    rb_define_singleton_method(rb_defout, "write", defout_write, 1);
+    rb_define_singleton_method(rb_defout, "cancel", defout_cancel, 0);
+#endif
+}
+
+static void flush_buffer()
+{
+    char *out;
+    int nout;
+
 #if RUBY_VERSION_CODE >= 180
     out = RSTRING(rb_stdout)->ptr;
     nout = RSTRING(rb_stdout)->len;
@@ -579,17 +592,108 @@ static void run()
     out = RSTRING(rb_defout)->ptr;
     nout = RSTRING(rb_defout)->len;
 #endif
-    if (!eruby_noheader &&
-	(eruby_mode == MODE_CGI || eruby_mode == MODE_NPHCGI)) {
-	if (eruby_mode == MODE_NPHCGI)
-	    print_http_headers();
-
-	printf("Content-Type: text/html; charset=%s\r\n", ERUBY_CHARSET);
-	printf("Content-Length: %d\r\n", nout);
-	printf("\r\n");
-    }
+    print_headers(nout);
     fwrite(out, nout, 1, stdout);
     fflush(stdout);
+}
+
+static VALUE file_open(VALUE filename)
+{
+    return rb_file_open((char *) filename, "r");
+}
+
+typedef struct compile_arg {
+    VALUE compiler;
+    VALUE input;
+} compile_arg_t;
+
+static VALUE eruby_compile_file(VALUE arg)
+{
+    return eruby_compiler_compile_file(((compile_arg_t *) arg)->compiler,
+				       ((compile_arg_t *) arg)->input);
+}
+
+static VALUE compile(char *filename)
+{
+    VALUE compiler;
+    VALUE code;
+    VALUE f;
+    VALUE vfilename = rb_str_new2(filename);
+    compile_arg_t carg;
+    int status;
+
+    if (strcmp(filename, "-") == 0) {
+	f = rb_stdin;
+    }
+    else {
+	f = rb_protect(file_open, (VALUE) filename, &status);
+	if (status) {
+	    error(status, Qnil);
+	}
+    }
+    compiler = eruby_compiler_new();
+    eruby_compiler_set_sourcefile(compiler, vfilename);
+    carg.compiler = compiler;
+    carg.input = f;
+    code = rb_protect(eruby_compile_file, (VALUE) &carg, &status);
+    if (status)	{
+	error(status, Qnil);
+    }
+    if (f != rb_stdin)
+	rb_io_close(f);
+    return code;
+}
+
+typedef struct eval_arg {
+    VALUE src;
+    VALUE filename;
+} eval_arg_t;
+
+static VALUE eval_string(VALUE arg)
+{
+    return rb_funcall(ruby_top_self, rb_intern("eval"), 3,
+		      ((eval_arg_t *) arg)->src,
+		      Qnil,
+		      ((eval_arg_t *) arg)->filename);
+}
+
+static VALUE eval(VALUE code, char *filename)
+{
+    int status;
+    eval_arg_t earg;
+
+    earg.src = code;
+    earg.filename = rb_str_new2(filename);
+    rb_protect(eval_string, (VALUE) &earg, &status);
+    if (status) {
+	error(status, code);
+    }
+    return code;
+}
+
+static void run()
+{
+    VALUE stack_start;
+    VALUE code;
+    void Init_stack _((VALUE*));
+
+    Init_stack(&stack_start);
+    code = compile(eruby_filename);
+    if (eruby_sync) {
+	print_headers(-1);
+    }
+    else {
+	replace_stdout();
+    }
+    code = eval(code, eruby_filename);
+    if (eruby_mode == MODE_FILTER &&
+	(RTEST(ruby_debug) || RTEST(ruby_verbose))) {
+	print_generated_code(stderr, code, 0);
+    }
+    rb_exec_end_proc();
+    if (!eruby_sync) {
+	flush_buffer();
+    }
     ruby_finalize();
 }
 
