@@ -1,3 +1,7 @@
+Tue Jul  19 19:07:12  2005  Jb Evain  <jbevain@gmail.com>
+
+	* eruby_lib.c: clean warnings, little refactoring
+
 Tue Mar  9 14:16:06 2004  Shugo Maeda <shugo@modruby.net>
 
 	* Makefile.in: use $(RUBY) to execute bin2c.

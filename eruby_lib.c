@@ -114,10 +114,19 @@ static int set_mode(char *mode)
     return 0;
 }
 
+static int is_option (const char *s, const char *opt)
+{
+	int len = strlen (opt);
+	if (strncmp(s , opt, len) == 0
+		&& (s[len] == '\0' || isspace(s[len])))
+		return len;
+	return 0;
+}
+
 int eruby_parse_options(int argc, char **argv, int *optind)
 {
-    int i, result = 0;
-    unsigned char *s;
+    int i, next, result = 0;
+    char *s;
 
     for (i = 1; i < argc; i++) {
 	if (argv[i][0] != '-' || argv[i][1] == '\0') {
@@ -125,7 +134,7 @@ int eruby_parse_options(int argc, char **argv, int *optind)
 	}
 	s = argv[i];
       again:
-	while (isspace(*s))
+	while (isspace(*(unsigned char *) s))
 	    s++;
 	if (*s == '-') s++;
 	switch (*s) {
@@ -157,8 +166,8 @@ int eruby_parse_options(int argc, char **argv, int *optind)
 		break;
 	    }
 	    else {
-		unsigned char *p = s;
-		while (*p && !isspace(*p)) p++;
+		char *p = s;
+		while (*p && !isspace(*(unsigned char *) p)) p++;
 		eruby_charset = rb_str_new(s, p - s);
 		s = p;
 		goto again;
@@ -186,37 +195,31 @@ int eruby_parse_options(int argc, char **argv, int *optind)
 	    result = 1; break;
 	case '-':
 	    s++;
-	    if (strncmp(s , "debug", 5) == 0
-		&& (s[5] == '\0' || isspace(s[5]))) {
+	    if ((next = is_option (s, "debug"))) {
 		ruby_debug = Qtrue;
-		s += 5;
+		s += next;
 		goto again;
 	    }
-	    else if (strncmp(s, "noheader", 8) == 0
-		     && (s[8] == '\0' || isspace(s[8]))) {
+	    else if ((next = is_option (s, "noheader"))) {
 		eruby_noheader = 1;
-		s += 8;
+		s += next;
 		goto again;
 	    }
-	    else if (strncmp(s, "sync", 4) == 0
-		     && (s[4] == '\0' || isspace(s[4]))) {
+	    else if ((next = is_option (s, "sync"))) {
 		eruby_sync = 1;
-		s += 4;
+		s += next;
 		goto again;
 	    }
-	    else if (strncmp(s, "version", 7) == 0
-		     && (s[7] == '\0' || isspace(s[7]))) {
+	    else if (is_option (s, "version")) {
 		show_version();
 		result = 1; break;
 	    }
-	    else if (strncmp(s, "verbose", 7) == 0
-		     && (s[7] == '\0' || isspace(s[7]))) {
+	    else if ((next = is_option (s, "verbose"))) {
 		ruby_verbose = Qtrue;
-		s += 7;
+		s += next;
 		goto again;
 	    }
-	    else if (strncmp(s, "help", 4) == 0
-		     && (s[4] == '\0' || isspace(s[4]))) {
+	    else if (is_option (s, "help")) {
 		usage(argv[0]);
 		result = 1; break;
 	    }
@@ -481,7 +484,7 @@ static VALUE eruby_compile(eruby_compiler_t *compiler)
     if (c == '#') {
 	c = nextc(compiler);
 	if (c == '!') {
-	    unsigned char *p;
+	    char *p;
 	    char *argv[2];
 	    char *line = RSTRING(compiler->lex_lastline)->ptr;
 
@@ -491,9 +494,9 @@ static VALUE eruby_compile(eruby_compiler_t *compiler)
 	    }
 	    argv[0] = "eruby";
 	    p = line;
-	    while (isspace(*p)) p++;
-	    while (*p && !isspace(*p)) p++;
-	    while (isspace(*p)) p++;
+	    while (isspace(*(unsigned char *) p)) p++;
+	    while (*p && !isspace(*(unsigned char *) p)) p++;
+	    while (isspace(*(unsigned char *) p)) p++;
 	    argv[1] = p;
 	    if (eruby_parse_options(2, argv, NULL) != 0) {
 		rb_raise(eERubyCompileError, "invalid #! line");
