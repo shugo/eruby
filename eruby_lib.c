@@ -311,18 +311,18 @@ static VALUE lex_str_gets(eruby_compiler_t *compiler)
     VALUE s = compiler->lex_input;
     char *beg, *end, *pend;
 
-    if (RSTRING(s)->len == compiler->lex_gets_ptr)
+    if (RSTRING_LEN(s) == compiler->lex_gets_ptr)
 	return Qnil;
-    beg = RSTRING(s)->ptr;
+    beg = RSTRING_PTR(s);
     if (compiler->lex_gets_ptr > 0) {
 	beg += compiler->lex_gets_ptr;
     }
-    pend = RSTRING(s)->ptr + RSTRING(s)->len;
+    pend = RSTRING_PTR(s) + RSTRING_LEN(s);
     end = beg;
     while (end < pend) {
 	if (*end++ == '\n') break;
     }
-    compiler->lex_gets_ptr = end - RSTRING(s)->ptr;
+    compiler->lex_gets_ptr = end - RSTRING_PTR(s);
     return rb_str_new(beg, end - beg);
 }
 
@@ -341,8 +341,8 @@ static inline int nextc(eruby_compiler_t *compiler)
 
 	    if (NIL_P(v)) return EOF;
 	    compiler->sourceline++;
-	    compiler->lex_pbeg = compiler->lex_p = RSTRING(v)->ptr;
-	    compiler->lex_pend = compiler->lex_p + RSTRING(v)->len;
+	    compiler->lex_pbeg = compiler->lex_p = RSTRING_PTR(v);
+	    compiler->lex_pend = compiler->lex_p + RSTRING_LEN(v);
 	    compiler->lex_lastline = v;
 	}
 	else {
@@ -486,7 +486,7 @@ static VALUE eruby_compile(eruby_compiler_t *compiler)
 	if (c == '!') {
 	    char *p;
 	    char *argv[2];
-	    char *line = RSTRING(compiler->lex_lastline)->ptr;
+	    char *line = RSTRING_PTR(compiler->lex_lastline);
 
 	    if (line[strlen(line) - 1] == '\n') {
 		line[strlen(line) - 1] = '\0';
