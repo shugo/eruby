@@ -702,6 +702,9 @@ static void run()
 
 int main(int argc, char **argv)
 {
+#ifdef _WIN32
+    NtInitialize(&argc, &argv);
+#endif
     init();
     proc_args(argc, argv);
     run();
