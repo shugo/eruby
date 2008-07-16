@@ -59,21 +59,24 @@ def AC_WITH(package, action = Proc.new)
   end
 end
 
-require 'ftools'
+require 'fileutils'
 
 def AC_OUTPUT(*files)
+  $DEFS ||= ""
   if $AC_LIST_HEADER
-    $DEFS = "-DHAVE_CONFIG_H"
+    $DEFS << " -DHAVE_CONFIG_H"
     AC_OUTPUT_HEADER($AC_LIST_HEADER)
   else
-    $DEFS = $ac_confdefs.collect {|k, v| "-D#{k}=#{v}" }.join(" ")
+    $DEFS << " " + $ac_confdefs.collect {|k, v| "-D#{k}=#{v}" }.join(" ")
   end
   for file in files
     print "creating ", file, "\n"
     open(File.join($srcdir, file + ".in")) do |fin|
-      File.makedirs(File.dirname(file))
+      FileUtils.mkdir_p(File.dirname(file))
       open(file, "w") do |fout|
+	depend = false
 	while line = fin.gets
+          depend = true if /^\#\#\# depend/ =~ line
 	  line.gsub!(/@([A-Za-z_]+)@/) do |s|
 	    name = $1
 	    if $ac_sed.key?(name)
@@ -82,6 +85,7 @@ def AC_OUTPUT(*files)
 	      s
 	    end
 	  end
+          line.gsub!(/(\s)([^\s\/]+\.[ch])/, '\1{$(srcdir)}\2') if depend && $nmake
 	  fout.print(line)
 	end
       end
@@ -153,11 +157,16 @@ def AC_CONFIG_AUX_DIRS(*dirs)
       file = File.join(dir, prog)
       if File.file?(file); then
 	$ac_aux_dir = dir
-	$ac_install_rb = "#{file} -c"
+	$ac_install_rb = "$(RUBY) #{file} -c"
 	return
       end
     end
   end
+end
+
+begin
+  require "continuation"
+rescue LoadError
 end
 
 def AC_PROG_INSTALL
@@ -291,6 +300,13 @@ $CC = CONFIG["CC"]
 $AR = CONFIG["AR"]
 $LD = "$(CC)"
 $RANLIB = CONFIG["RANLIB"]
+$ruby = arg_config("--ruby", File.join(Config::CONFIG["bindir"], CONFIG["ruby_install_name"]))
+$RUBY = ($nmake && !$configure_args.has_key?('--ruby')) ? $ruby.gsub(%r'/', '\\') : $ruby
+if RUBY_VERSION < "1.8.0"
+  $RM = 'rm -f'
+else
+  $RM = CONFIG["RM"] || '$(RUBY) -run -e rm -- -f'
+end
 
 if not defined? CFLAGS
   CFLAGS = CONFIG["CFLAGS"]
@@ -306,7 +322,7 @@ if $LDFLAGS.to_s.empty? && /mswin32/ =~ RUBY_PLATFORM
   $LDFLAGS = "-link -incremental:no -pdb:none"
 end
 $LIBS = CONFIG["LIBS"]
-$XLDFLAGS = CONFIG["XLDFLAGS"]
+$XLDFLAGS = CONFIG["XLDFLAGS"].to_s
 $XLDFLAGS.gsub!(/-L\./, "")
 if /mswin32/ !~ RUBY_PLATFORM
   $XLDFLAGS += " -L$(libdir)"
@@ -349,6 +365,14 @@ when /-aix/
   end
 end
 
+$COMPILE_RULES = ''
+if defined?(COMPILE_RULES)
+  COMPILE_RULES.each do |rule|
+    $COMPILE_RULES << sprintf(rule, 'c', $OBJEXT)
+    $COMPILE_RULES << sprintf("\n\t%s\n\n", COMPILE_C)
+  end
+end
+
 AC_SUBST("srcdir")
 AC_SUBST("topdir")
 AC_SUBST("hdrdir")
@@ -375,6 +399,8 @@ AC_SUBST("CC")
 AC_SUBST("AR")
 AC_SUBST("LD")
 AC_SUBST("RANLIB")
+AC_SUBST("RUBY")
+AC_SUBST("RM")
 
 AC_SUBST("CFLAGS")
 AC_SUBST("DEFS")
@@ -387,6 +413,8 @@ AC_SUBST("LDSHARED")
 AC_SUBST("OBJEXT")
 AC_SUBST("EXEEXT")
 AC_SUBST("DLEXT")
+
+AC_SUBST("COMPILE_RULES")
 
 AC_SUBST("RUBY_INSTALL_NAME")
 AC_SUBST("LIBRUBYARG")
